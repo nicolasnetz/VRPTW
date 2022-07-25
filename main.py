@@ -166,7 +166,7 @@ class Modelo():
 
 
 if __name__=="__main__":
-    ins = Instancia("instances/RC207.txt",num_nodos=10, include_n_1=True)
+    ins = Instancia("instances/C101.txt",num_nodos=None, include_n_1=True)
     model = Modelo()
     print("building model")
     model.build(ins)
