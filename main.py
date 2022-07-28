@@ -2,6 +2,7 @@ import numpy as np
 from docplex.mp.model import Model
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import cm
+import sys
 
 class Instancia():
     def __init__(self,file_path, include_n_1 = False, num_nodos = None):
@@ -164,14 +165,23 @@ class Modelo():
         plt.show()
 
 
+    def export_sol(self,ins):
+        print(self.mdl.solution)
+
 
 if __name__=="__main__":
-    ins = Instancia("instances/C101.txt",num_nodos=None, include_n_1=True)
+    # Ejemplo de entrada
+    # python main.py C101 10
+    print(sys.argv)
+    ins_name = sys.argv[1]
+    num_nodos = int(sys.argv[2])    
+    ins = Instancia("instances/{}.txt".format(ins_name),num_nodos=num_nodos, include_n_1=True)
     model = Modelo()
     print("building model")
     model.build(ins)
     print("model built")
     model.solve()
+    print("plot solution")
     model.graficar_solucion(ins)
 
 
