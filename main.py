@@ -47,9 +47,10 @@ class Instancia():
         else:
             self.N = list(self.cust_no[1:]) # V\{0}    
 
-        self.K = [i for i in range(self.vehicle_number)] # All vehicles
-        self.A = [(i,j) for i in self.V for j in self.V if i!=j]
-        self.c = {(i,j): int(np.hypot(self.coord_x[i] - self.coord_x[j] , self.coord_y[i] - self.coord_y[j])) for i,j in self.A}
+        self.K = [i for i in range(1,1+ self.vehicle_number)] # All vehicles
+        # self.A = [(i,j) for i in self.V for j in self.V if i!=j]
+        self.A = [(i,j) for i in self.V for j in self.V if i not in [j,self.V[-1]] if j!=0]
+        self.c = {(i,j): round(np.hypot(self.coord_x[i] - self.coord_x[j] , self.coord_y[i] - self.coord_y[j]),1) for i,j in self.A}
         self.a = list(self.ready_time.copy())
         self.b = list(self.due_date.copy())
         self.s = list(self.service_time.copy())
@@ -58,9 +59,9 @@ class Instancia():
 
 
 class Modelo():
-    def __init__(self):
+    def __init__(self,max_time):
         self.name = "VRPTW1"
-
+        self.max_time = max_time
     def build(self,ins):
         # Model
         # Model is VRPTW1 from Ch.5 Toth&Vigo, 2014
@@ -91,7 +92,7 @@ class Modelo():
 
         # print(self.mdl.pprint_as_string())
 
-        self.mdl.parameters.timelimit=3600
+        self.mdl.parameters.timelimit=self.max_time
         self.mdl.context.cplex_parameters.threads = 1
         self.mdl.export_as_lp("model_nico.lp")
 
@@ -175,8 +176,9 @@ if __name__=="__main__":
     print(sys.argv)
     ins_name = sys.argv[1]
     num_nodos = int(sys.argv[2])    
+    max_time = int(sys.argv[3])
     ins = Instancia("instances/{}.txt".format(ins_name),num_nodos=num_nodos, include_n_1=True)
-    model = Modelo()
+    model = Modelo(max_time=max_time)
     print("building model")
     model.build(ins)
     print("model built")
