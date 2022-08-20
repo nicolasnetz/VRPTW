@@ -6,9 +6,10 @@ import numpy as np
 import sys
 
 class Instancia():
-    def __init__(self,file_path, include_n_1 = False, num_nodos = None):
+    def __init__(self,file_path, include_n_1 = False, num_nodos = None, ins_name="C101"):
         self.file_path = file_path
         file_head = []
+        self.ins_name = ins_name
         cols_head = []
         instance_data = []
         with open(file_path) as f:
@@ -118,7 +119,6 @@ class Modelo():
     def graficar_solucion(self,ins):
         rutas = []
         truck = []
-        print(len(ins.V) - 1)
         for k in ins.K:
             for i in ins.V:
                 if i !=0 and self.x[0,i,k].solution_value >0.9:
@@ -145,7 +145,7 @@ class Modelo():
                 except:
                     pass
             caminos_por_truck.append(tuplas)
-        print(caminos_por_truck)
+
         plt.figure(figsize = (12,5))
         plt.scatter(ins.coord_x,ins.coord_y, color = "blue")
 
@@ -165,6 +165,59 @@ class Modelo():
         plt.legend()
         plt.show()
 
+    def export_route(self, ins):
+        rutas = []
+        truck = []
+        for k in ins.K:
+            for i in ins.V:
+                if i !=0 and self.x[0,i,k].solution_value >0.9:
+                    aux = [0,i]
+                    while i != 0 and i != (len(ins.V) - 1):
+                        j = i
+                        for h in ins.V:
+                            try:
+                                if j !=h and self.x[j,h,k].solution_value > 0.9:
+                                    aux.append(h)
+                                    i = h
+                            except:
+                                pass    
+                    rutas.append(aux)
+                    truck.append(k)
+
+
+        caminos_por_truck = []
+        for i in truck:
+            tuplas = []
+            for j in range(len(rutas[i])):
+                try:
+                    tuplas.append((rutas[i][j],rutas[i][j + 1]))
+                except:
+                    pass
+            caminos_por_truck.append(tuplas)
+
+        formatted_routes = []
+        for route in caminos_por_truck:
+            if len(route) == 1:
+                continue
+            else:
+                aux = [0]
+                for path in route:
+                    if path[0] in aux:
+                        continue
+                    else:
+                        if path[1] == 101:
+                            continue
+                        else:
+                            aux.append(path[0])
+                            aux.append(path[1])
+                aux = aux[1:]
+                formatted_routes.append(aux)
+
+        with open('my_solutions/{}.sol'.format(ins.ins_name), 'w') as fp:
+            for i in range(1, len(formatted_routes) + 1):
+                fp.write("Route: #{}: {}\n".format(i, formatted_routes[i - 1]) )
+                
+            fp.write("{}\n".format(model.mdl.objective_value))
 
 
 
@@ -172,8 +225,8 @@ if __name__=="__main__":
     # Ejemplo de entrada
     # python main.py C101 10
     ins_name = "C101"
-    num_nodos = 100    
-    ins = Instancia("instances/{}.txt".format(ins_name),num_nodos=num_nodos, include_n_1=True) # FALSE FOR SOLOMON
+    num_nodos = 10
+    ins = Instancia("instances/{}.txt".format(ins_name),num_nodos=num_nodos, include_n_1=True, ins_name=ins_name) # FALSE FOR SOLOMON
     model = Modelo()
     print("building model")
     model.build(ins)
@@ -183,6 +236,7 @@ if __name__=="__main__":
     print("model built")
     model.solve()
     model.graficar_solucion(ins)
+    model.export_route(ins)
 
 
 # Mejorar el origen de los indices, para no generar el objeto iterador cada vez
