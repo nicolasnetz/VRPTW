@@ -108,7 +108,7 @@ class Modelo():
 
         # print(self.mdl.pprint_as_string())         
         self.mdl.parameters.timelimit= self.max_time
-        self.mdl.context.cplex_parameters.threads = 1
+        self.mdl.context.cplex_parameters.threads = 4
         # self.mdl.export_as_lp("model_nico.lp")
 
 
@@ -247,12 +247,12 @@ class InstanceSolver():
         self.ins_name = ins_name
         if num_nodos == None:
             self.num_nodos = num_nodos
-        else:
+        else: 
             self.num_nodos = int(num_nodos)
 
     def solve(self):
         ins = Instancia("instances/{}.txt".format(self.ins_name),num_nodos=self.num_nodos, include_n_1=True, ins_name=self.ins_name) # FALSE FOR SOLOMON
-        model = Modelo(log=False, max_time=300)
+        model = Modelo(log=True, max_time=300)
         print("building model")
         model.build(ins)
         print("model built")
