@@ -252,7 +252,7 @@ class InstanceSolver():
 
     def solve(self):
         ins = Instancia("instances/{}.txt".format(self.ins_name),num_nodos=self.num_nodos, include_n_1=True, ins_name=self.ins_name) # FALSE FOR SOLOMON
-        model = Modelo(log=True, max_time=300)
+        model = Modelo(log=True, max_time=200)
         print("building model")
         model.build(ins)
         print("model built")
@@ -287,7 +287,7 @@ if __name__=="__main__":
     
     results = []
     for ins in os.listdir("instances"):
-        instance = InstanceSolver(ins_name=ins.split(".")[0], num_nodos= None)
+        instance = InstanceSolver(ins_name=ins.split(".")[0], num_nodos= 25)
         # instance = InstanceSolver(ins_name=ins_name, num_nodos=num_nodos)
         instance.solve()
         results.append(instance.get_result())
