@@ -1,6 +1,6 @@
 # VRPTW
 
-Solve the solomon instances with the model VRPTW1 from Ch.5 Toth&Vigo, 2014
+Solve the Solomon instances with the model VRPTW1 from Ch.5 Toth&Vigo, 2014 using python and cplex
 
 Features:
 

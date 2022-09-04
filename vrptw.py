@@ -4,7 +4,6 @@ from docplex.mp.model import Model
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import cm
 import numpy as np
-import sys
 import os
 import time
 
@@ -165,8 +164,7 @@ class Vrptw():
 
         plt.xlabel("X Coordinate")
         plt.ylabel("Y Coordinate")
-        plt.title("Solution of \n {} \n {}\n {}".format(ins.ins_name,self.mdl.objective_value, self.result_type))
-        plt.legend()
+        plt.title("Solution of \n {0} \n {1:.1f}\n {2}".format(ins.ins_name,self.mdl.objective_value, self.result_type))
         if show_plot:
             plt.show()
         else:    
@@ -233,7 +231,6 @@ class Vrptw():
         else: 
             return [ins.ins_name, ins.num_nodos, "DNF", self.result_type, "NaN", "{0:.4g}".format(self.elapsed_time)]
 
-
 class Solver():
     def __init__(self, file_path = 'instances/C101.txt', num_nodos = 10, log_output = True, time_limit = 30, show_plot = False, plot = False ):
         self.file_path = file_path # 
@@ -264,9 +261,7 @@ class Solver():
         df = pd.read_csv('my_results.csv', usecols = [i for i in range(1,6 + 1)])
         df = df.append(dict(zip(df.columns,self.model.export_to_table(self.ins))), ignore_index = True)
         df.to_csv('my_results.csv')
-
-
-        
+   
 if __name__=="__main__":
     try: 
         os.mkdir("my_solutions")
@@ -289,8 +284,7 @@ if __name__=="__main__":
     # Instances paths
     instance_path = sorted(['instances/' + i for i in os.listdir('instances')])
 
-
-    results = []
+    # For each file solve it 
     for ins_file_path in instance_path:
         s = Solver(
             file_path = ins_file_path,
@@ -298,9 +292,8 @@ if __name__=="__main__":
             log_output = False,
             time_limit = 30,
             show_plot = False,
-            plot = False
+            plot = True
             )
-        
         s.execute()
         s.to_table()    
 
