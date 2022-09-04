@@ -277,6 +277,8 @@ if __name__=="__main__":
         pass
     try:
         df = pd.read_csv('my_results.csv')
+        df = df.append(dict(zip(df.columns,['new execution' for i in range(6)])), ignore_index = True)
+        df.to_csv('my_results.csv')
     except:
         df = pd.DataFrame(columns=["instance", "nodes", "result", "status","gap %", "time"])
         df.to_csv("my_results.csv")
