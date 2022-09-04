@@ -1,10 +1,13 @@
-# Vehicle Routing Problem With Time Windows
+# VRPTW
 
-Model from Toht & Vigo and Instances from Solomon
+Solve the solomon instances with the model VRPTW1 from Ch.5 Toth&Vigo, 2014
 
+Features:
 
-Install requirements from requirements.txt as:
+* csv outputs in my_result.csv
+* plot outputs
+* model outputs
+* solution outputs (route and vehicle usage)
 
-´´´
-pip install -r requirements.txt
-´´´
+### Authors
+made by @nicolasnetz with the support of Lucas Parada

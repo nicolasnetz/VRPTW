@@ -8,37 +8,39 @@ import sys
 import os
 import time
 
-class Instancia():
-    def __init__(self,file_path, include_n_1 = False, num_nodos = None, ins_name="C101"):
+class Instance():
+    def __init__(self,file_path, num_nodos = None):
+        # Instance characteristics
         self.file_path = file_path
-        file_head = []
-        self.ins_name = ins_name
+        self.ins_name = self.file_path.split(sep = '/')[1].split('.')[0]
         self.num_nodos = num_nodos
+        # Choose the number of nodes
         if num_nodos != None:
-            self.ins_name = "{}-{}".format(ins_name,str(num_nodos))
-        cols_head = []
+            self.ins_name = "{}-{}".format(self.ins_name,str(num_nodos))
+    
+    def get_data(self):
+        # Retrieve data
         instance_data = []
-        with open(file_path) as f:
+        with open(self.file_path) as f:
             file = f.readlines()
-            file_name = file[0]
             self.vehicle_number = int(file[4].replace("\n","").split("\t")[0].split(" ")[2])
             self.vehicle_capacity = int(file[4].replace("\n","").split("\t")[0].split(" ")[-1])
 
-            if num_nodos == None:
+            if self.num_nodos == None:
                 for line in file[9:]:
                     line_data = [int(i) for i in line.split(" ") if i not in ["", "\n"]]
                     instance_data.append(line_data)
-            if num_nodos!= None:
-                for line in file[9:10+num_nodos]:
+            if self.num_nodos!= None:
+                for line in file[9:10+self.num_nodos]:
                     line_data = [int(i) for i in line.split(" ") if i not in ["", "\n"]]
                     instance_data.append(line_data)
 
-            if include_n_1 == True:
-                # Include n + 1
-                n_1 = instance_data[0].copy()
-                n_1[0] = len(instance_data)
-                instance_data.append(n_1)
+            # Include n + 1
+            n_1 = instance_data[0].copy()
+            n_1[0] = len(instance_data)
+            instance_data.append(n_1)
 
+        # Take columns
         instance_data = np.array(instance_data).astype(int)
         self.cust_no = instance_data[:,0]
         self.coord_x = instance_data[:,1]
@@ -49,38 +51,26 @@ class Instancia():
         self.service_time = instance_data[:,6]
 
         # Mathematical model data
-        self.V = list(self.cust_no) # All nodes
-        if include_n_1 == True:
-            self.N = list(self.cust_no[1:-1]) # V\{0, n + 1}            
-        else:
-            self.N = list(self.cust_no[1:]) # V\{0}    
-
-        self.K = [i for i in range(self.vehicle_number)] # All vehicles
+        self.V = list(self.cust_no)
+        self.N = list(self.cust_no[1:-1]) # V\{0, n + 1}
+        self.K = [i for i in range(self.vehicle_number)]
         self.A = [(i,j) for i in self.V for j in self.V if i not in [j,self.V[-1]] if j!=0]
-
-        # Toth y Vigo
-        # self.c = {(i,j): np.hypot(self.coord_x[i] - self.coord_x[j] , self.coord_y[i] - self.coord_y[j]) for i,j in self.A}
-        # KDMSS distance
         self.c = {(i,j): int(10*np.sqrt( (self.coord_x[i] - self.coord_x[j] )**2 + (self.coord_y[i] - self.coord_y[j])**2))/10 for i,j in self.A}
-        # Solomon
-        # self.c = {(i,j): np.round(np.hypot(self.coord_x[i] - self.coord_x[j] , self.coord_y[i] - self.coord_y[j]),1) for i in self.V for j in self.V if i!=j}
         self.a = list(self.ready_time.copy())
         self.b = list(self.due_date.copy())
         self.s = list(self.service_time.copy())
         self.Q = self.vehicle_capacity
         self.q = list(self.demand.copy())
         self.M = {(i,j): np.max(self.b[i]+self.s[i]+self.c[i,j]-self.a[j],0) for i,j in self.A}
-        self.num_nodos = len(self.N)
 
-class Modelo():
-    def __init__(self,log = True, max_time = 30):
-        self.name = "VRPTW1"
-        self.log = log
-        self.max_time = max_time
+class Vrptw():
+    def __init__(self,log_output = True, time_limit = 30):
+        self.name = "VRPTW1 from Ch.5 Toth&Vigo, 2014"
+        self.log_output = log_output
+        self.time_limit = time_limit
 
     def build(self,ins):
         # Model
-        # Model is VRPTW1 from Ch.5 Toth&Vigo, 2014
         self.mdl = Model(self.name)
 
         # Decision Variables
@@ -105,32 +95,33 @@ class Modelo():
         self.mdl.add_constraints(self.T[i,k] <= ins.b[i] for i in ins.V for k in ins.K )
         # Constraint 9       
         self.mdl.add_constraints((self.mdl.sum(ins.q[i]*(self.mdl.sum(self.x[(i,j,k)] for j in ins.V if j not in [0,i])) for i in ins.N) <= ins.Q) for k in ins.K)
-
-        # print(self.mdl.pprint_as_string())         
-        self.mdl.parameters.timelimit= self.max_time
-        self.mdl.context.cplex_parameters.threads = 4
-        # self.mdl.export_as_lp("model_nico.lp")
-
-
-    def solve(self):
+   
+    def solve(self,ins):
+        print("Solving instance {}".format(ins.ins_name))
         self.start_time = time.time()
-        self.solution = self.mdl.solve(log_output=self.log)
+        self.mdl.parameters.timelimit= self.time_limit
+        self.mdl.context.cplex_parameters.threads = 4
+        self.solution = self.mdl.solve(log_output=self.log_output)
         self.finish_time = time.time()
         self.elapsed_time = self.finish_time - self.start_time
         self.result_type = str(self.mdl.solve_status).split(".")[1]
         if self.solution:
-            print("Obj: ",self.mdl.objective_value)
-            self.mdl.report()
+            print("Objective: {0:.1f}".format(self.mdl.objective_value))
             print("Result: ", self.result_type)
             
         else: 
-            print("model has no solution...")
+            print("Model for {} has no solution...".format(ins.ins_name))
 
-    def export_sol(self,ins):
+    def print_sol(self):
+        self.mdl.report()
         print(self.mdl.solution)
 
-    def graficar_solucion(self,ins,write_only = False):
-        rutas = []
+    def export_mdl_file(self,ins):
+        # print(self.mdl.pprint_as_string())         
+        self.mdl.export_as_lp("my_models/model{}.lp".format(ins.ins_name))
+
+    def plot_sol(self,ins,show_plot = False):
+        routes = []
         truck = []
         for k in ins.K:
             for i in ins.V:
@@ -145,19 +136,19 @@ class Modelo():
                                     i = h
                             except:
                                 pass    
-                    rutas.append(aux)
+                    routes.append(aux)
                     truck.append(k)
 
 
-        caminos_por_truck = []
+        routes_by_vehicle = []
         for i in truck:
-            tuplas = []
-            for j in range(len(rutas[i])):
+            tuples = []
+            for j in range(len(routes[i])):
                 try:
-                    tuplas.append((rutas[i][j],rutas[i][j + 1]))
+                    tuples.append((routes[i][j],routes[i][j + 1]))
                 except:
                     pass
-            caminos_por_truck.append(tuplas)
+            routes_by_vehicle.append(tuples)
 
         plt.figure(figsize = (12,5))
         plt.scatter(ins.coord_x,ins.coord_y, color = "blue")
@@ -169,20 +160,20 @@ class Modelo():
         color = iter(cm.rainbow(np.linspace(0, 1, ins.vehicle_number)))
         for v in truck:
             c = next(color)
-            for i,j in caminos_por_truck[v]:
+            for i,j in routes_by_vehicle[v]:
                 plt.plot([ins.coord_x[i],ins.coord_x[j]],[ins.coord_y[i],ins.coord_y[j]], alpha=0.4, zorder=0, c = c)
 
-        plt.xlabel("Distancia X")
-        plt.ylabel("Distancia Y")
-        plt.title("Solución {} \n {}\n {}".format(ins.file_path,self.mdl.objective_value, self.result_type))
+        plt.xlabel("X Coordinate")
+        plt.ylabel("Y Coordinate")
+        plt.title("Solution of \n {} \n {}\n {}".format(ins.ins_name,self.mdl.objective_value, self.result_type))
         plt.legend()
-        if write_only:
-            plt.savefig('my_plots/{}.png'.format(ins.ins_name))
-        else:    
+        if show_plot:
             plt.show()
+        else:    
+            plt.savefig('my_plots/{}.png'.format(ins.ins_name))
 
-    def export_route(self, ins):
-        rutas = []
+    def export_sol_file(self, ins):
+        routes = []
         truck = []
         for k in ins.K:
             for i in ins.V:
@@ -197,22 +188,22 @@ class Modelo():
                                     i = h
                             except:
                                 pass    
-                    rutas.append(aux)
+                    routes.append(aux)
                     truck.append(k)
 
 
-        caminos_por_truck = []
+        routes_by_vehicle = []
         for i in truck:
-            tuplas = []
-            for j in range(len(rutas[i])):
+            tuples = []
+            for j in range(len(routes[i])):
                 try:
-                    tuplas.append((rutas[i][j],rutas[i][j + 1]))
+                    tuples.append((routes[i][j],routes[i][j + 1]))
                 except:
                     pass
-            caminos_por_truck.append(tuplas)
+            routes_by_vehicle.append(tuples)
 
         formatted_routes = []
-        for route in caminos_por_truck:
+        for route in routes_by_vehicle:
             if len(route) == 1:
                 continue
             else:
@@ -238,72 +229,82 @@ class Modelo():
 
     def export_to_table(self,ins):
         if self.solution:
-            return [ins.ins_name, ins.num_nodos, "{0:.1f}".format(self.mdl.objective_value), self.result_type, "{0:.4g}".format(self.elapsed_time)]
+            return [ins.ins_name, ins.num_nodos, "{0:.1f}".format(self.mdl.objective_value), self.result_type,  "{0:.1f}".format(self.mdl.solve_details.mip_relative_gap * 100), "{0:.4g}".format(self.elapsed_time)]
         else: 
-            return [ins.ins_name, ins.num_nodos, "DNF", self.result_type, "{0:.4g}".format(self.elapsed_time)]
+            return [ins.ins_name, ins.num_nodos, "DNF", self.result_type, "NaN", "{0:.4g}".format(self.elapsed_time)]
 
-class InstanceSolver():
-    def __init__(self,ins_name = "C101", num_nodos= "10"):
-        self.ins_name = ins_name
-        if num_nodos == None:
-            self.num_nodos = num_nodos
-        else: 
-            self.num_nodos = int(num_nodos)
 
-    def solve(self):
-        ins = Instancia("instances/{}.txt".format(self.ins_name),num_nodos=self.num_nodos, include_n_1=True, ins_name=self.ins_name) # FALSE FOR SOLOMON
-        model = Modelo(log=True, max_time=300)
-        print("building model")
-        model.build(ins)
-        print("model built")
-        model.solve()
-        if model.solution:
-            print("model solved")
-            model.graficar_solucion(ins, write_only = True)
-            model.export_route(ins)
-            
-        else:
-            print("model has no solution...")
+class Solver():
+    def __init__(self, file_path = 'instances/C101.txt', num_nodos = 10, log_output = True, time_limit = 30, show_plot = False, plot = False ):
+        self.file_path = file_path # 
+        self.num_nodos = num_nodos #
+        self.log_output = log_output #
+        self.time_limit = time_limit #
+        self.show_plot = show_plot
+        self.plot = plot
 
-        print("export to table")
-        self.result =  model.export_to_table(ins)
-        print(self.result)
+        self.ins = Instance(file_path = self.file_path, num_nodos=self.num_nodos)
+        self.model = Vrptw(log_output=log_output, time_limit=self.time_limit)
 
-    def get_result(self):
-        return(self.result)
+    def execute(self):
+        # Get instance data
+        self.ins.get_data()
+        # Build model
+        self.model.build(self.ins)
+        # Solve model
+        self.model.solve(self.ins)
+        # Exports
+        self.model.export_mdl_file(self.ins)
+        self.model.export_sol_file(self.ins)
+        ## Plots
+        if self.plot:
+            self.model.plot_sol(ins=self.ins, show_plot= self.show_plot)
+        
+    def to_table(self):
+        df = pd.read_csv('my_results.csv', usecols = [i for i in range(1,6 + 1)])
+        df = df.append(dict(zip(df.columns,self.model.export_to_table(self.ins))), ignore_index = True)
+        df.to_csv('my_results.csv')
 
+
+        
 if __name__=="__main__":
     try: 
         os.mkdir("my_solutions")
+    except:
+        pass
+    try:
         os.mkdir("my_plots")
     except:
         pass
-    
-    
-    # ins_name = sys.argv[1]
-    # num_nodos = sys.argv[2]
-    # if num_nodos == "-1":
-    #     num_nodos = None
-    
+    try:
+        os.mkdir("my_models")
+    except:
+        pass
+    try:
+        df = pd.read_csv('my_results.csv')
+    except:
+        df = pd.DataFrame(columns=["instance", "nodes", "result", "status","gap %", "time"])
+        df.to_csv("my_results.csv")
+
+    # Instances paths
+    instance_path = sorted(['instances/' + i for i in os.listdir('instances')])
+
+
     results = []
-    for ins in os.listdir("instances"):
-        instance = InstanceSolver(ins_name=ins.split(".")[0], num_nodos= None)
-        # instance = InstanceSolver(ins_name=ins_name, num_nodos=num_nodos)
-        instance.solve()
-        results.append(instance.get_result())
-        df = pd.DataFrame(results, columns=["instance", "nodes", "result", "status", "time"])
-        df.to_csv("result_table.csv")
-    print(results)
-    
+    for ins_file_path in instance_path:
+        s = Solver(
+            file_path = ins_file_path,
+            num_nodos = 10,
+            log_output = False,
+            time_limit = 30,
+            show_plot = False,
+            plot = False
+            )
+        
+        s.execute()
+        s.to_table()    
 
-# Tareas
-# Plot feasible
-# Export solutions when feasible
-# Except unknown and DNF
-
-# EJEMPLO DE USO
-# Especificando una cantidad de nodos = 5
-# root@user python vrptw.py R201 5
-
-# Si se quiere usar todos los nodos
-# root@user python vrptw.py R201 -1
+# Work to do
+# Include time of execution to table?
+# Improve logs
+# maybe add a menu
