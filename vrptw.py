@@ -231,6 +231,7 @@ class Vrptw():
         if self.solution:
             return [ins.ins_name, ins.num_nodos, "{0:.1f}".format(self.mdl.objective_value), self.result_type,  "{0:.1f}".format(self.mdl.solve_details.mip_relative_gap * 100), "{0:.4g}".format(self.elapsed_time)]
         else: 
+<<<<<<< HEAD
             return [ins.ins_name, ins.num_nodos, "DNF", self.result_type, "NaN", "{0:.4g}".format(self.elapsed_time)]
 
 
@@ -267,6 +268,32 @@ class Solver():
 
 
         
+=======
+            self.num_nodos = int(num_nodos)
+
+    def solve(self):
+        ins = Instancia("instances/{}.txt".format(self.ins_name),num_nodos=self.num_nodos, include_n_1=True, ins_name=self.ins_name) # FALSE FOR SOLOMON
+        model = Modelo(log=True, max_time=200)
+        print("building model")
+        model.build(ins)
+        print("model built")
+        model.solve()
+        if model.solution:
+            print("model solved")
+            model.graficar_solucion(ins, write_only = True)
+            model.export_route(ins)
+            
+        else:
+            print("model has no solution...")
+
+        print("export to table")
+        self.result =  model.export_to_table(ins)
+        print(self.result)
+
+    def get_result(self):
+        return(self.result)
+
+>>>>>>> 93ea5769f494ab69a17fa68d5b92551182b061fd
 if __name__=="__main__":
     try: 
         os.mkdir("my_solutions")
@@ -276,6 +303,7 @@ if __name__=="__main__":
         os.mkdir("my_plots")
     except:
         pass
+<<<<<<< HEAD
     try:
         os.mkdir("my_models")
     except:
@@ -285,6 +313,25 @@ if __name__=="__main__":
     except:
         df = pd.DataFrame(columns=["instance", "nodes", "result", "status","gap %", "time"])
         df.to_csv("my_results.csv")
+=======
+    
+    
+    # ins_name = sys.argv[1]
+    # num_nodos = sys.argv[2]
+    # if num_nodos == "-1":
+    #     num_nodos = None
+    
+    results = []
+    for ins in os.listdir("instances"):
+        instance = InstanceSolver(ins_name=ins.split(".")[0], num_nodos= 25)
+        # instance = InstanceSolver(ins_name=ins_name, num_nodos=num_nodos)
+        instance.solve()
+        results.append(instance.get_result())
+        df = pd.DataFrame(results, columns=["instance", "nodes", "result", "status", "time"])
+        df.to_csv("result_table.csv")
+    print(results)
+    
+>>>>>>> 93ea5769f494ab69a17fa68d5b92551182b061fd
 
     # Instances paths
     instance_path = sorted(['instances/' + i for i in os.listdir('instances')])
