@@ -300,4 +300,3 @@ if __name__=="__main__":
         s.to_table()    
 
 # Work to do
-# Include time of execution to table?
