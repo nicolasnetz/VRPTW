@@ -11,3 +11,6 @@ Features:
 
 ### Authors
 made by @nicolasnetz with the support of Lucas Parada
+
+## Other
+See requirements.txt. Executed on python 3.7.9 and CPLEX Academic version 22.1.0.0

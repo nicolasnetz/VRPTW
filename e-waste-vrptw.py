@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 from matplotlib.pyplot import cm
 import numpy as np
 import os
-import sys
 import time
 
 class Instance():
@@ -25,6 +24,7 @@ class Instance():
             file = f.readlines()
             self.vehicle_number = int(file[4].replace("\n","").split("\t")[0].split(" ")[2])
             self.vehicle_capacity = int(file[4].replace("\n","").split("\t")[0].split(" ")[-1])
+
             if self.num_nodos == None:
                 for line in file[9:]:
                     line_data = [int(i) for i in line.split(" ") if i not in ["", "\n"]]
@@ -282,18 +282,47 @@ if __name__=="__main__":
     except:
         df = pd.DataFrame(columns=["instance", "nodes", "result", "status","gap %", "time"])
         df.to_csv("my_results.csv")
-    
-    ins_file_path = 'instances/{}.txt'.format(sys.argv[1])
-    num_nodos = int(sys.argv[2]) if sys.argv[2]!='-1' else None
-    s = Solver(
-        file_path = ins_file_path,
-        num_nodos = num_nodos,
-        log_output = True,
-        time_limit = 180,
-        show_plot = True,
-        plot = True
-        )
-    s.execute()
-    s.to_table()    
+
+    # Instances paths
+    instance_path = sorted(['instances/' + i for i in os.listdir('instances')])
+
+    # For each file solve it 
+    for ins_file_path in instance_path:
+        s = Solver(
+            file_path = ins_file_path,
+            num_nodos = 10,
+            log_output = False,
+            time_limit = 30,
+            show_plot = False,
+            plot = True
+            )
+        s.execute()
+        s.to_table()    
 
 # Work to do
+
+
+#velocidad de camiones
+velocidadcamiones=1
+
+preciodiesel=655
+rendcamion=2
+#Parámetros para calcular el costo de emisiones: CV*fe/cons
+Ico2=3.639
+FEco2=2.63
+
+cemisiones=Ico2*FEco2/rendcamion
+
+print(cemisiones)
+
+
+distancias = {(1,1): 0}
+tiempo=distancias/velocidadcamiones
+costos=distancias*preciodiesel/rendcamion
+
+costos_fijos=500000
+
+
+
+# modelo2.minimize(modelo2.sum(c[i,j]*x1[i,j,k] for i in N for j in N for k in V )+modelo2.sum(costos_fijos*(1-x1[0,0,k]) for k in V)+ modelo2.sum(dis[i,j]*x1[i,j,k]*cemisiones for i in N for j in N for k in V) ) 
+# CCCVRPTWSD: Chance-constrained capacited vehicle routing problem with time windows and stochastic demand.
